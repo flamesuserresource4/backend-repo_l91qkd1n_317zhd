@@ -1,48 +1,49 @@
 """
-Database Schemas
+Database Schemas for Lawn Mowing App
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Define MongoDB collection schemas using Pydantic models.
+Each Pydantic model maps to a collection with the lowercase class name.
+- Quote -> "quote"
+- Booking -> "booking"
 """
 
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel, Field, EmailStr
+from typing import Optional, List
+from datetime import date
 
-# Example schemas (replace with your own):
-
-class User(BaseModel):
+class Quote(BaseModel):
     """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
+    Quote requests and computed results
+    Collection: "quote"
     """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    name: str = Field(..., description="Customer full name")
+    email: EmailStr = Field(..., description="Customer email")
+    address: str = Field(..., description="Service address")
+    zip_code: str = Field(..., min_length=4, max_length=10, description="ZIP/Postal code")
+    lawn_size_sqft: int = Field(..., ge=100, le=100000, description="Estimated lawn size in square feet")
+    frequency: str = Field(..., pattern="^(once|biweekly|weekly)$", description="Service frequency")
+    extras: List[str] = Field(default_factory=list, description="Selected extras e.g., edging, leaf_cleanup, pet_waste")
+    base_price: float = Field(..., ge=0, description="Calculated base price before discounts and fees")
+    discount: float = Field(..., ge=0, description="Total discount applied")
+    extras_total: float = Field(..., ge=0, description="Total extras price")
+    service_fee: float = Field(..., ge=0, description="Service/booking fee")
+    total: float = Field(..., ge=0, description="Final total price")
 
-class Product(BaseModel):
+class Booking(BaseModel):
     """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
+    Confirmed bookings
+    Collection: "booking"
     """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
-
-# Add your own schemas here:
-# --------------------------------------------------
-
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+    quote_id: Optional[str] = Field(None, description="Associated quote document id")
+    name: str = Field(..., description="Customer full name")
+    email: EmailStr = Field(...)
+    phone: str = Field(..., min_length=7, max_length=20)
+    address: str = Field(...)
+    zip_code: str = Field(...)
+    lawn_size_sqft: int = Field(..., ge=100, le=100000)
+    frequency: str = Field(..., pattern="^(once|biweekly|weekly)$")
+    extras: List[str] = Field(default_factory=list)
+    notes: Optional[str] = Field(None)
+    preferred_date: Optional[date] = Field(None, description="Preferred service date")
+    price_total: float = Field(..., ge=0, description="Total price confirmed at booking time")
+    status: str = Field("confirmed", description="Booking status")
